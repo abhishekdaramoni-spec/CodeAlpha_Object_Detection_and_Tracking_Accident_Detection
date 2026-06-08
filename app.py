@@ -4,6 +4,7 @@ import gc
 import sqlite3
 import threading
 import psutil
+import json
 from datetime import datetime
 from flask import Flask, render_template, request, redirect, url_for, jsonify, send_file, Response
 import cv2
@@ -26,8 +27,39 @@ thread_lock = threading.Lock()
 processing_thread = None
 stop_processing = False
 
-# Global live state tracking dict for stats polling
-active_counts = {
+STATS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "active_counts.json")
+
+def write_active_counts(data):
+    try:
+        temp_file = STATS_FILE + ".tmp"
+        with open(temp_file, 'w') as f:
+            json.dump(data, f)
+        os.replace(temp_file, STATS_FILE)
+    except Exception as e:
+        print(f"Error writing active counts: {e}")
+
+def read_active_counts():
+    try:
+        if os.path.exists(STATS_FILE):
+            with open(STATS_FILE, 'r') as f:
+                return json.load(f)
+    except Exception as e:
+        print(f"Error reading active counts: {e}")
+    return {
+        'system_status': 'IDLE',
+        'total_detections': 0,
+        'active_tracks': 0,
+        'current_counts': {
+            'person': 0,
+            'car': 0,
+            'motorcycle': 0,
+            'bus': 0,
+            'truck': 0
+        }
+    }
+
+# Initialize stats file on startup
+write_active_counts({
     'system_status': 'IDLE',
     'total_detections': 0,
     'active_tracks': 0,
@@ -38,7 +70,7 @@ active_counts = {
         'bus': 0,
         'truck': 0
     }
-}
+})
 
 # Ensure folders exist
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static", "uploads")
@@ -138,8 +170,6 @@ def get_analytics_kpi():
         'Low': low_cnt
     }
 
-latest_encoded_frame = None
-
 def get_default_frame():
     img = np.zeros((360, 640, 3), dtype=np.uint8)
     cv2.putText(img, "Stream Offline. Launch feed to start.", (120, 180), 
@@ -150,15 +180,23 @@ def get_default_frame():
 default_encoded_frame = get_default_frame()
 
 def gen_frames():
-    global latest_encoded_frame
+    filepath = os.path.join(UPLOAD_FOLDER, "live_frame.jpg")
     while True:
-        frame_bytes = latest_encoded_frame if (active_counts['system_status'] == 'PROCESSING' and latest_encoded_frame is not None) else default_encoded_frame
+        frame_bytes = default_encoded_frame
+        stats = read_active_counts()
+        if stats['system_status'] == 'PROCESSING':
+            try:
+                if os.path.exists(filepath):
+                    with open(filepath, 'rb') as f:
+                        frame_bytes = f.read()
+            except Exception:
+                pass
         yield (b'--frame\r\n'
                b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
         time.sleep(0.06)
 
 def process_stream_background(source_path):
-    global stop_processing, active_counts, latest_encoded_frame
+    global stop_processing
     cap = None
     
     try:
@@ -175,7 +213,9 @@ def process_stream_background(source_path):
                 raise Exception(f"Failed to load video file: {source_path}")
             print("Camera Connected")
                 
-        active_counts['system_status'] = 'PROCESSING'
+        stats = read_active_counts()
+        stats['system_status'] = 'PROCESSING'
+        write_active_counts(stats)
         
         while cap.isOpened() and not stop_processing:
             ret, frame = cap.read()
@@ -193,8 +233,10 @@ def process_stream_background(source_path):
             
             # Update live stats
             total_objs = sum(counts.values())
-            active_counts['active_tracks'] = total_objs
-            active_counts['current_counts'] = counts
+            stats = read_active_counts()
+            stats['active_tracks'] = total_objs
+            stats['current_counts'] = counts
+            write_active_counts(stats)
             
             # Save new incidents
             for inc in new_incidents:
@@ -231,9 +273,7 @@ def process_stream_background(source_path):
             cv2.putText(annotated_frame, "RESTRICTED ROI ZONE", (rx1 + 5, ry1 + 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1, cv2.LINE_AA)
             
-            ret, jpeg = cv2.imencode('.jpg', annotated_frame)
-            if ret:
-                latest_encoded_frame = jpeg.tobytes()
+            cv2.imwrite(os.path.join(UPLOAD_FOLDER, "live_frame.jpg"), annotated_frame)
             
             # Pacing loop to conserve CPU
             if source_path != "webcam":
@@ -244,16 +284,18 @@ def process_stream_background(source_path):
         error_frame = np.zeros((360, 640, 3), dtype=np.uint8)
         cv2.putText(error_frame, f"FEED ERROR: {str(e)[:40]}", (60, 180), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1, cv2.LINE_AA)
-        ret, jpeg = cv2.imencode('.jpg', error_frame)
-        if ret:
-            latest_encoded_frame = jpeg.tobytes()
+        cv2.imwrite(os.path.join(UPLOAD_FOLDER, "live_frame.jpg"), error_frame)
         
     finally:
         if cap is not None:
             cap.release()
-        active_counts['system_status'] = 'IDLE'
-        active_counts['active_tracks'] = 0
-        active_counts['current_counts'] = {cls_name: 0 for cls_name in detector.TRACKED_CLASSES.values()}
+        stats = {
+            'system_status': 'IDLE',
+            'active_tracks': 0,
+            'current_counts': {cls_name: 0 for cls_name in detector.TRACKED_CLASSES.values()}
+        }
+        write_active_counts(stats)
+        cv2.imwrite(os.path.join(UPLOAD_FOLDER, "live_frame.jpg"), default_frame)
         gc.collect()
 
 def stop_active_thread():
@@ -271,7 +313,8 @@ def root():
 def dashboard():
     kpis = get_analytics_kpi()
     records = get_incident_history(10)
-    processing = (active_counts['system_status'] == 'PROCESSING')
+    stats = read_active_counts()
+    processing = (stats['system_status'] == 'PROCESSING')
     return render_template('dashboard.html', active_page='dashboard', stats=kpis, records=records, processing=processing)
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -282,7 +325,10 @@ def upload():
             stop_active_thread()
             
             if request.form.get('use_webcam') == 'true':
-                active_counts['system_status'] = 'PROCESSING'
+                stats = read_active_counts()
+                stats['system_status'] = 'PROCESSING'
+                write_active_counts(stats)
+                
                 processing_thread = threading.Thread(target=process_stream_background, args=("webcam",))
                 processing_thread.daemon = True
                 processing_thread.start()
@@ -301,7 +347,10 @@ def upload():
                 filepath = os.path.join(UPLOAD_FOLDER, filename)
                 uploaded_file.save(filepath)
                 
-                active_counts['system_status'] = 'PROCESSING'
+                stats = read_active_counts()
+                stats['system_status'] = 'PROCESSING'
+                write_active_counts(stats)
+                
                 processing_thread = threading.Thread(target=process_stream_background, args=(filepath,))
                 processing_thread.daemon = True
                 processing_thread.start()
@@ -341,7 +390,8 @@ def video_feed():
 def get_stats():
     kpis = get_analytics_kpi()
     recent = get_incident_history(5)
-    raw_counts = active_counts['current_counts'] or {}
+    stats = read_active_counts()
+    raw_counts = stats.get('current_counts') or {}
     
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -371,9 +421,9 @@ def get_stats():
         print(f"Failed to read memory usage: {e}")
 
     return jsonify({
-        'system_status': active_counts['system_status'],
+        'system_status': stats['system_status'],
         'total_detections': kpis['total'],
-        'active_tracks': active_counts['active_tracks'],
+        'active_tracks': stats['active_tracks'],
         'current_counts': merged_counts,
         'recent_incidents': recent,
         'cpu_percent': cpu_percent,
