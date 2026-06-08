@@ -4,9 +4,9 @@ import os
 port = os.environ.get("PORT", "5000")
 bind = f"0.0.0.0:{port}"
 
-# Limit worker count to 1 and thread count to 1 to fit under Render's 512 MB memory limit
+# Limit worker count to 1 and thread count to 4 to fit under Render's 512 MB memory limit while handling concurrent streaming and stats polling
 workers = 1
-threads = 1
+threads = 4
 
 # Increase timeout for model initialization on startup
 timeout = 120

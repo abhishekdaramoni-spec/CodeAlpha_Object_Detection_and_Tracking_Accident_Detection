@@ -163,6 +163,8 @@ def process_stream_background(source_path):
     
     try:
         if source_path == "webcam":
+            if os.environ.get("RENDER") == "true":
+                raise Exception("Webcam streaming is not supported on cloud nodes.")
             cap = cv2.VideoCapture(0)
             if not cap.isOpened():
                 raise Exception("Surveillance camera sensor is not available.")
