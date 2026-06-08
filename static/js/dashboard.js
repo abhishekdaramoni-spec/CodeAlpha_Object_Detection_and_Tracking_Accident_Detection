@@ -47,13 +47,13 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 
-    // 3. Image Refresh Loop (10 FPS)
-    const videoStream = document.getElementById("video-stream");
-    if (videoStream) {
-        setInterval(() => {
-            videoStream.src = "/static/uploads/live_frame.jpg?t=" + Date.now();
-        }, 100);
-    }
+    // 3. Image Refresh Loop (Disabled - Native MJPEG stream is served directly from /video_feed)
+    // const videoStream = document.getElementById("video-stream");
+    // if (videoStream) {
+    //     setInterval(() => {
+    //         videoStream.src = "/static/uploads/live_frame.jpg?t=" + Date.now();
+    //     }, 100);
+    // }
 
     // 4. Incident Resolution Handler (Global hook)
     window.resolveIncident = function (incidentId, button) {

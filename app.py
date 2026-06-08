@@ -138,8 +138,27 @@ def get_analytics_kpi():
         'Low': low_cnt
     }
 
+latest_encoded_frame = None
+
+def get_default_frame():
+    img = np.zeros((360, 640, 3), dtype=np.uint8)
+    cv2.putText(img, "Stream Offline. Launch feed to start.", (120, 180), 
+                cv2.FONT_HERSHEY_SIMPLEX, 0.6, (244, 63, 94), 1, cv2.LINE_AA)
+    ret, jpeg = cv2.imencode('.jpg', img)
+    return jpeg.tobytes() if ret else b''
+
+default_encoded_frame = get_default_frame()
+
+def gen_frames():
+    global latest_encoded_frame
+    while True:
+        frame_bytes = latest_encoded_frame if (active_counts['system_status'] == 'PROCESSING' and latest_encoded_frame is not None) else default_encoded_frame
+        yield (b'--frame\r\n'
+               b'Content-Type: image/jpeg\r\n\r\n' + frame_bytes + b'\r\n')
+        time.sleep(0.06)
+
 def process_stream_background(source_path):
-    global stop_processing, active_counts
+    global stop_processing, active_counts, latest_encoded_frame
     cap = None
     
     try:
@@ -210,7 +229,9 @@ def process_stream_background(source_path):
             cv2.putText(annotated_frame, "RESTRICTED ROI ZONE", (rx1 + 5, ry1 + 15),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0, 255, 255), 1, cv2.LINE_AA)
             
-            cv2.imwrite(os.path.join(UPLOAD_FOLDER, "live_frame.jpg"), annotated_frame)
+            ret, jpeg = cv2.imencode('.jpg', annotated_frame)
+            if ret:
+                latest_encoded_frame = jpeg.tobytes()
             
             # Pacing loop to conserve CPU
             if source_path != "webcam":
@@ -221,7 +242,9 @@ def process_stream_background(source_path):
         error_frame = np.zeros((360, 640, 3), dtype=np.uint8)
         cv2.putText(error_frame, f"FEED ERROR: {str(e)[:40]}", (60, 180), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 1, cv2.LINE_AA)
-        cv2.imwrite(os.path.join(UPLOAD_FOLDER, "live_frame.jpg"), error_frame)
+        ret, jpeg = cv2.imencode('.jpg', error_frame)
+        if ret:
+            latest_encoded_frame = jpeg.tobytes()
         
     finally:
         if cap is not None:
@@ -310,10 +333,7 @@ def stop_feed():
 
 @app.route('/video_feed')
 def video_feed():
-    filepath = os.path.join(UPLOAD_FOLDER, "live_frame.jpg")
-    if os.path.exists(filepath):
-        return send_file(filepath, mimetype='image/jpeg')
-    return jsonify({'status': 'error'}), 404
+    return Response(gen_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 @app.route('/api/stats')
 def get_stats():
