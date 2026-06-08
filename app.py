@@ -336,14 +336,26 @@ def get_stats():
             raw_counts.get('truck', 0)
         )
     }
+    cpu_percent = 0.0
+    memory_percent = 0.0
+    try:
+        cpu_percent = psutil.cpu_percent()
+    except Exception as e:
+        print(f"Failed to read CPU usage: {e}")
+        
+    try:
+        memory_percent = psutil.virtual_memory().percent
+    except Exception as e:
+        print(f"Failed to read memory usage: {e}")
+
     return jsonify({
         'system_status': active_counts['system_status'],
         'total_detections': kpis['total'],
         'active_tracks': active_counts['active_tracks'],
         'current_counts': merged_counts,
         'recent_incidents': recent,
-        'cpu_percent': psutil.cpu_percent(),
-        'memory_percent': psutil.virtual_memory().percent,
+        'cpu_percent': cpu_percent,
+        'memory_percent': memory_percent,
         'avg_confidence': avg_conf,
         'images_processed': 0,
         'videos_processed': 0
