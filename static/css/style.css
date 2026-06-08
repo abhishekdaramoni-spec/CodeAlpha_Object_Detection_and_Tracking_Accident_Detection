@@ -1,0 +1,446 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+
+:root {
+    /* High Visibility Light Theme Settings */
+    --bg-primary: #f1f5f9;
+    --bg-card: #ffffff;
+    --text-primary: #0f172a;
+    --text-muted: #475569;
+    --border-color: rgba(15, 23, 42, 0.12);
+    --hover-bg: rgba(15, 23, 42, 0.05);
+    
+    /* Core Accents */
+    --brand-rose: #be123c;
+    --brand-rose-glow: rgba(190, 18, 60, 0.2);
+    --neon-cyan: #0284c7;
+    --neon-green: #16a34a;
+    --neon-red: #b91c1c;
+    --sidebar-bg: #0f172a;
+    --sidebar-text: #e2e8f0;
+}
+
+[data-theme="dark"] {
+    /* High Visibility Dark Theme Settings */
+    --bg-primary: #070a10;
+    --bg-card: #111827;
+    --text-primary: #f8fafc;
+    --text-muted: #cbd5e1;
+    --border-color: rgba(255, 255, 255, 0.16);
+    --hover-bg: rgba(255, 255, 255, 0.06);
+    
+    /* Core Accents */
+    --brand-rose: #f43f5e;
+    --brand-rose-glow: rgba(244, 63, 94, 0.25);
+    --neon-cyan: #38bdf8;
+    --neon-green: #4ade80;
+    --neon-red: #f87171;
+    --sidebar-bg: #030712;
+    --sidebar-text: #94a3b8;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    font-family: 'Outfit', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.text-muted {
+    color: var(--text-muted) !important;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--brand-rose);
+}
+
+/* Master Layout Grid */
+.app-wrapper {
+    display: flex;
+    min-height: 100vh;
+    position: relative;
+}
+
+/* Collapsible / Sticky Sidebar */
+.app-sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s ease;
+    border-right: 1px solid var(--border-color);
+}
+.sidebar-header {
+    padding: 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #fff;
+}
+.sidebar-header span {
+    color: var(--brand-rose);
+}
+.sidebar-menu {
+    list-style: none;
+    padding: 20px 0;
+    margin: 0;
+    flex-grow: 1;
+}
+.sidebar-item a {
+    display: flex;
+    align-items: center;
+    padding: 12px 24px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border-left: 3px solid transparent;
+}
+.sidebar-item a:hover {
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+}
+.sidebar-item.active a {
+    background: rgba(244, 63, 94, 0.1);
+    color: #fff;
+    border-left-color: var(--brand-rose);
+}
+.sidebar-item i {
+    width: 24px;
+    font-size: 1.1rem;
+}
+
+/* Main Dashboard Wrapper */
+.app-content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+/* Top Navbar Style */
+.app-navbar {
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.navbar-brand-mobile {
+    display: none;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+/* SaaS Card Layout */
+.card-saas {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px 0 rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.card-saas:hover {
+    transform: translateY(-1px);
+    border-color: var(--brand-rose-glow);
+    box-shadow: 0 4px 20px 0 rgba(244, 63, 94, 0.08);
+}
+.card-saas-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-color);
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.card-saas-body {
+    padding: 20px;
+}
+
+/* Stat Cards */
+.saas-stat-card {
+    border-left: 5px solid var(--brand-rose);
+}
+.stat-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--text-primary);
+    margin: 5px 0;
+}
+.stat-title {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    font-weight: 700;
+}
+
+/* Bounding box counts text contrast styles */
+.text-cyan { color: var(--neon-cyan) !important; }
+.text-green { color: var(--neon-green) !important; }
+.text-red { color: var(--neon-red) !important; }
+.text-rose { color: var(--brand-rose) !important; }
+
+/* Accessible Solid Colored Badges (Ensures White Text contrast) */
+.badge-saas {
+    padding: 6px 12px;
+    border-radius: 50px;
+    font-weight: 700;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #ffffff !important;
+}
+.badge-saas.bg-low {
+    background: #0ea5e9; /* Sky blue */
+}
+.badge-saas.bg-moderate {
+    background: #f97316; /* Orange */
+}
+.badge-saas.bg-high {
+    background: #e11d48; /* Red/Rose */
+}
+.badge-saas.bg-active {
+    background: #dc2626; /* Deep Red */
+}
+.badge-saas.bg-resolved {
+    background: #16a34a; /* Green */
+}
+.badge-saas.bg-image {
+    background: #4f46e5; /* Indigo */
+}
+.badge-saas.bg-video {
+    background: #0d9488; /* Teal */
+}
+.badge-saas.bg-webcam {
+    background: #059669; /* Emerald */
+}
+
+/* Interactive tables */
+.table-saas {
+    color: var(--text-primary);
+}
+.table-saas th {
+    border-bottom: 2px solid var(--border-color);
+    color: var(--text-primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+.table-saas td {
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+.table-saas tbody tr {
+    transition: background-color 0.2s ease;
+}
+.table-saas tbody tr:hover {
+    background-color: var(--hover-bg);
+}
+
+/* Screenshots Thumbnail List */
+.screenshot-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 12px;
+}
+.screenshot-item {
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    aspect-ratio: 16/9;
+}
+.screenshot-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+.screenshot-item:hover {
+    transform: scale(1.05);
+    border-color: var(--brand-rose);
+}
+
+/* Custom Buttons */
+.btn-saas {
+    font-weight: 700;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.5px;
+}
+.btn-saas-primary {
+    background: var(--brand-rose);
+    color: #fff;
+    border: 1px solid var(--brand-rose);
+}
+.btn-saas-primary:hover {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border-color);
+}
+.btn-saas-danger {
+    background: #dc2626;
+    color: #fff;
+    border: 1px solid #dc2626;
+}
+.btn-saas-danger:hover {
+    background: transparent;
+    color: #dc2626;
+}
+
+/* Stream Feeds */
+.stream-viewport {
+    position: relative;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+    background: #000;
+    aspect-ratio: 16/9;
+}
+.stream-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
+/* Settings sliders */
+.saas-slider {
+    width: 100%;
+    accent-color: var(--brand-rose);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    background: var(--hover-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    transition: all 0.3s ease;
+}
+.theme-toggle-btn:hover {
+    color: var(--brand-rose);
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 991px) {
+    .app-sidebar {
+        position: fixed;
+        left: -250px;
+        top: 0;
+        bottom: 0;
+        z-index: 1050;
+    }
+    .app-sidebar.show {
+        left: 0;
+    }
+    .navbar-brand-mobile {
+        display: block;
+    }
+}
+@keyframes blinker {
+    50% { opacity: 0.5; }
+}
+.saas-blink {
+    animation: blinker 1.5s linear infinite;
+}
+
+/* Ensure text-white adapts properly to dark text in light theme */
+[data-theme="light"] .text-white {
+    color: var(--text-primary) !important;
+}
+
+/* Restore white text for components with solid dark/colored backgrounds */
+[data-theme="light"] .app-sidebar .text-white,
+[data-theme="light"] .modal-content .text-white,
+[data-theme="light"] .bg-black .text-white,
+[data-theme="light"] .badge .text-white,
+[data-theme="light"] .badge-saas .text-white,
+[data-theme="light"] .btn .text-white,
+[data-theme="light"] .bg-success .text-white,
+[data-theme="light"] .bg-danger .text-white,
+[data-theme="light"] .bg-warning .text-white,
+[data-theme="light"] .bg-secondary .text-white {
+    color: #ffffff !important;
+}
+
+/* Ensure headings adapt in light theme */
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6,
+[data-theme="light"] .display-5 {
+    color: var(--text-primary) !important;
+}
+
+/* Style form elements beautifully in Light Theme */
+[data-theme="light"] .form-control,
+[data-theme="light"] .form-select {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+[data-theme="light"] .form-control:focus,
+[data-theme="light"] .form-select:focus {
+    background-color: var(--bg-card) !important;
+    color: var(--text-primary) !important;
+    border-color: var(--brand-rose) !important;
+    box-shadow: 0 0 0 0.25rem var(--brand-rose-glow) !important;
+}
+
+/* Adapt bg-dark boxes to light theme bg-primary for correct contrast */
+[data-theme="light"] .bg-dark:not(.app-sidebar):not(.modal-content):not(.bg-black) {
+    background-color: var(--bg-primary) !important;
+}
+
+/* Adjust secondary borders to light border color */
+[data-theme="light"] .border-secondary {
+    border-color: var(--border-color) !important;
+}
+[data-theme="light"] .border-secondary.border-opacity-25,
+[data-theme="light"] .border-secondary.border-opacity-10 {
+    border-color: var(--border-color) !important;
+}
+
+/* Adjust outline light button colors */
+[data-theme="light"] .btn-outline-light {
+    color: var(--text-primary) !important;
+    border-color: var(--border-color) !important;
+}
+[data-theme="light"] .btn-outline-light:hover {
+    background-color: var(--hover-bg) !important;
+    color: var(--text-primary) !important;
+}
+

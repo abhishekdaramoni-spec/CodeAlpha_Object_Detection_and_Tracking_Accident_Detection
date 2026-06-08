@@ -1,0 +1,7 @@
+Flask
+gunicorn
+ultralytics==8.3.*
+opencv-python-headless
+numpy
+psutil
+deep-sort-realtime

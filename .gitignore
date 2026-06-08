@@ -1,0 +1,15 @@
+__pycache__/
+*.pyc
+
+database.db
+
+scratch/
+
+static/evidence/*
+!static/evidence/.gitkeep
+
+static/uploads/*
+!static/uploads/.gitkeep
+
+.env
+venv/

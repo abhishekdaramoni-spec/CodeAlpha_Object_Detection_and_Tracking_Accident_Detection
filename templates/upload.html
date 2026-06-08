@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Surveillance AI - Upload Media{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <h1 class="h3 text-white mb-1">Session Initializer</h1>
+    <p class="text-muted mb-0">Upload a static file or spin up a local camera sensor to begin detection.</p>
+</div>
+
+<div class="row g-4">
+    <!-- Image & Video File Upload card -->
+    <div class="col-md-7">
+        <div class="card card-saas h-100">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-file-arrow-up me-2 text-cyan"></i> File Analyzer</span>
+            </div>
+            <div class="card-saas-body">
+                <form action="/upload" method="POST" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="media-file" class="form-label text-white fw-bold">Select Image or Video File</label>
+                        <input type="file" class="form-control bg-dark border-secondary text-white" id="media-file" name="file" accept="image/*,video/mp4" required>
+                        <div class="form-text text-muted mt-2">
+                            Supported video formats: <strong>MP4</strong>.<br>
+                            Supported image formats: <strong>PNG, JPG, JPEG</strong>.<br>
+                            Files are automatically scaled and processed for maximum CPU efficiency.
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-saas btn-saas-primary w-100 py-3">
+                        <i class="fa-solid fa-magnifying-glass me-2"></i> Start Analysis
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Camera Sensor Card -->
+    <div class="col-md-5">
+        <div class="card card-saas h-100">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-camera me-2 text-cyan"></i> Camera Sensor Link</span>
+            </div>
+            <div class="card-saas-body d-flex flex-column justify-content-center text-center p-4">
+                <i class="fa-solid fa-video text-muted mb-3" style="font-size: 3rem;"></i>
+                <h5 class="text-white mb-2">Webcam Surveillance Stream</h5>
+                <p class="text-muted font-size-sm mb-4">
+                    Open index-0 system hardware camera. Note: Webcam streaming works locally and is disabled by default on cloud nodes.
+                </p>
+                
+                <form action="/upload" method="POST">
+                    <input type="hidden" name="use_webcam" value="true">
+                    <button type="submit" class="btn btn-saas btn-saas-primary w-100 py-3 bg-teal" style="background: var(--brand-teal); border-color: var(--brand-teal);">
+                        <i class="fa-solid fa-plug me-2"></i> Boot Webcam Sensor
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

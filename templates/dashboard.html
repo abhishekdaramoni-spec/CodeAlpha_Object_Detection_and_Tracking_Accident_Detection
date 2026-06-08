@@ -1,0 +1,225 @@
+{% extends "base.html" %}
+
+{% block title %}Surveillance AI - Dashboard{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN for Analytics rendering -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div id="dashboard-viewport"></div>
+
+<!-- Top Title Bar -->
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <div>
+        <h1 class="h3 text-white mb-1">Operational Control Center</h1>
+        <p class="text-muted mb-0">Monitor active cameras, inspect logs, and track statistics in real time.</p>
+    </div>
+    {% if processing %}
+    <div class="mt-2 mt-md-0">
+        <a href="/stop" class="btn btn-saas btn-saas-danger">
+            <i class="fa-solid fa-video-slash me-2"></i> Terminate Active Feed
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card card-saas p-3 saas-stat-card h-100">
+            <div class="stat-title">System Status</div>
+            <div id="stat-status" class="stat-value text-green">IDLE</div>
+            <div class="text-muted font-size-xs mt-1">CPU Detection Engine</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-saas p-3 saas-stat-card h-100" style="border-left-color: var(--brand-rose);">
+            <div class="stat-title">Total Alerts Logged</div>
+            <div id="stat-total" class="stat-value text-white">{{ stats.total }}</div>
+            <div class="text-muted font-size-xs mt-1">Total traffic anomalies detected</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card card-saas p-3 saas-stat-card h-100" style="border-left-color: var(--neon-cyan);">
+            <div class="stat-title">Active Tracked Objects</div>
+            <div id="stat-active-tracks" class="stat-value text-cyan">0</div>
+            <div class="text-muted font-size-xs mt-1">Centroid calculations</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Stream Column -->
+    <div class="col-lg-8">
+        <div class="card card-saas h-100">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-desktop me-2 text-cyan"></i> Live Streaming Monitor</span>
+                {% if processing %}
+                    <span class="badge badge-saas bg-webcam">Active Feed</span>
+                {% else %}
+                    <span class="badge badge-saas bg-secondary">Offline</span>
+                {% endif %}
+            </div>
+            <div class="card-saas-body">
+                <div class="stream-viewport d-flex align-items-center justify-content-center" style="background: #000; min-height: 360px; border-radius: 8px; overflow: hidden;">
+                    {% if processing %}
+                        <img src="{{ url_for('video_feed') }}" class="stream-img w-100 h-100" id="video-stream" alt="Live processing stream" style="object-fit: contain; max-height: 480px;">
+                    {% else %}
+                        <div class="text-center p-5">
+                            <i class="fa-solid fa-circle-exclamation text-muted mb-3" style="font-size: 3.5rem;"></i>
+                            <h5 class="text-white mb-2">No Active Surveillance Feed</h5>
+                            <p class="text-muted font-size-sm mb-4">Please upload a media file or launch the webcam stream to trigger object detection.</p>
+                            <a href="/upload" class="btn btn-saas btn-saas-primary">
+                                <i class="fa-solid fa-plus me-1"></i> Start Session
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <!-- Class Counters Row -->
+                <div class="row g-3 mt-4 text-center">
+                    <div class="col-6">
+                        <div class="border border-secondary border-opacity-25 rounded p-3 bg-dark bg-opacity-10">
+                            <div class="font-size-sm text-muted mb-1"><i class="fa-solid fa-person text-cyan me-1"></i> Persons</div>
+                            <h3 class="mb-0 text-white font-weight-bold" id="count-person">0</h3>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="border border-secondary border-opacity-25 rounded p-3 bg-dark bg-opacity-10">
+                            <div class="font-size-sm text-muted mb-1"><i class="fa-solid fa-car text-rose me-1"></i> Vehicles</div>
+                            <h3 class="mb-0 text-white font-weight-bold" id="count-vehicle">0</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Screenshot gallery list sidebar -->
+    <div class="col-lg-4">
+        <div class="card card-saas h-100">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-camera-retro me-2 text-cyan"></i> Auto-Captured Snapshots</span>
+            </div>
+            <div class="card-saas-body overflow-auto" style="max-height: 440px;">
+                <div class="screenshot-grid" id="dashboard-screenshot-gallery">
+                    <p class="text-muted text-center py-4">No screenshots captured yet.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Logs Table Row -->
+<div class="card card-saas mt-4">
+    <div class="card-saas-header d-flex justify-content-between align-items-center">
+        <span><i class="fa-solid fa-clock-rotate-left me-2 text-cyan"></i> Logged Accident Alerts ({{ records|length }} total)</span>
+        <a href="/history/clear" class="btn btn-sm btn-saas btn-saas-danger py-1" onclick="return confirm('Wipe the entire incidents history? Screenshots will also be deleted.');">
+            <i class="fa-solid fa-trash me-1"></i> Wipe Database
+        </a>
+    </div>
+    <div class="card-saas-body p-0">
+        <div class="table-responsive">
+            <table class="table table-saas mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-3" style="width: 80px;">ID</th>
+                        <th style="width: 170px;">Timestamp</th>
+                        <th style="width: 110px;">Severity</th>
+                        <th style="width: 110px;">Confidence</th>
+                        <th style="width: 110px;">Status</th>
+                        <th>Description</th>
+                        <th style="width: 120px;">Evidence</th>
+                        <th class="pe-3 text-end" style="width: 120px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if records|length == 0 %}
+                    <tr>
+                        <td colspan="8" class="text-center text-muted py-5">
+                            <i class="fa-solid fa-folder-open mb-2" style="font-size: 2.5rem;"></i>
+                            <p class="mb-0">No incidents found in database.</p>
+                        </td>
+                    </tr>
+                    {% else %}
+                        {% for r in records %}
+                        <tr>
+                            <td class="ps-3 text-white fw-bold">#{{ r.id }}</td>
+                            <td>{{ r.timestamp }}</td>
+                            <td>
+                                {% if r.severity == 'High' %}
+                                    <span class="badge badge-saas bg-high">High</span>
+                                {% elif r.severity == 'Moderate' %}
+                                    <span class="badge badge-saas bg-moderate">Moderate</span>
+                                {% else %}
+                                    <span class="badge badge-saas bg-low">Low</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-white fw-bold">{{ (r.confidence_score * 100)|int }}%</td>
+                            <td>
+                                {% if r.status == 'Active' %}
+                                    <span class="badge badge-saas bg-active">Active</span>
+                                {% else %}
+                                    <span class="badge badge-saas bg-resolved">Resolved</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-muted">{{ r.description }}</td>
+                            <td>
+                                {% if r.screenshot_path %}
+                                 <img src="/{{ r.screenshot_path }}" 
+                                      class="screenshot-item" 
+                                      alt="Incident Audit" 
+                                      style="max-width: 80px; max-height: 45px; border-radius: 4px; cursor: pointer; object-fit: cover;"
+                                      onclick="openLightbox('/{{ r.screenshot_path }}', '{{ r.incident_type }}')">
+                                {% else %}
+                                <span class="text-muted font-size-xs">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td class="pe-3 text-end">
+                                {% if r.status == 'Active' %}
+                                    <button onclick="resolveIncident({{ r.id }}, this)" 
+                                            class="btn btn-sm btn-saas btn-saas-primary bg-teal border-teal py-1 px-2 font-size-xs text-white" style="background: var(--neon-green); border-color: var(--neon-green);">
+                                        <i class="fa-solid fa-check me-1"></i> Resolve
+                                    </button>
+                                {% else %}
+                                    <span class="badge badge-saas bg-resolved">Resolved</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Charts Row -->
+<div class="row g-4 mt-2">
+    <!-- Class Dist Chart -->
+    <div class="col-lg-6">
+        <div class="card card-saas">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-chart-column me-2 text-cyan"></i> Incidents by Category</span>
+            </div>
+            <div class="card-saas-body" style="position: relative; height: 260px;">
+                <canvas id="classChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Source type Dist Chart -->
+    <div class="col-lg-6">
+        <div class="card card-saas">
+            <div class="card-saas-header">
+                <span><i class="fa-solid fa-chart-pie me-2 text-cyan"></i> Incident Severity Distribution</span>
+            </div>
+            <div class="card-saas-body" style="position: relative; height: 260px;">
+                <canvas id="sourceChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
